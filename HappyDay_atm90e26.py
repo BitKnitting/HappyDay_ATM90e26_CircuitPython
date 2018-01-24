@@ -78,9 +78,9 @@ class ATM90e26:
 
     def __init__(self, spi_bus, cs):
         self._device = SPIDevice(spi_bus, cs, baudrate=200000, polarity=1, phase=1)
+        self.resetIC()
 
-
-    def initIC(self):
+    def resetIC(self):
         # Perform soft reset
         self._spi_rw(SPI_WRITE, ATM90_SOFT_RESET, 0x789A)
         # Voltage sag irq=1, report on warnout pin=1, energy dir change irq=0
