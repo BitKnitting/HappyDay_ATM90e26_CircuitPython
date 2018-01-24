@@ -20,7 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """
-`HappyDay_energyic_SPI`
 ====================================================
 
 This is a CircuitPython driver for the ATM90e26 energy reading chip.
@@ -32,6 +31,7 @@ This is a CircuitPython driver for the ATM90e26 energy reading chip.
     - changed the get<something>() functions to property getters.
     - updated code based on Pylint 2.0 feedback.
     - changed naming from energyic_SPI to atm90e26 to better reflect what this is.
+    - more readable
 """
 import time # need a bit of delay at the end of initializing the ATM90e26...
 from spi_device import SPIDevice
@@ -69,100 +69,102 @@ ATM90_POWER_F = 0x4D # L Line Power Factor
 ATM90_FREQ = 0x4C # Voltage frequency
 ATM90_AP_ENERGY = 0x40 # Forward Active Energy
 ATM90_AN_ENERGY = 0x41 # Reverse Active Energy
+SPI_READ = 1
+SPI_WRITE = 0
 
 
-class atm90e26:
+class ATM90e26:
     ##############################################################################
 
     def __init__(self, spi_bus, cs):
         self._device = SPIDevice(spi_bus, cs, baudrate=200000, polarity=1, phase=1)
 
 
-    def init(self):
+    def initIC(self):
         # Perform soft reset
-        self._common_function(0, ATM90_SOFT_RESET, 0x789A)
+        self._spi_rw(SPI_WRITE, ATM90_SOFT_RESET, 0x789A)
         # Voltage sag irq=1, report on warnout pin=1, energy dir change irq=0
-        self._common_function(0, ATM90_FUNC_EN, 0x0030)
+        self._spi_rw(SPI_WRITE, ATM90_FUNC_EN, 0x0030)
         # Voltage sag threshhold
-        self._common_function(0, ATM90_SAG_TH, 0x1F2F)
+        self._spi_rw(SPI_WRITE, ATM90_SAG_TH, 0x1F2F)
         #########################################
         #### Set metering calibration values ####
         #########################################
         # Metering calibration startup command. Register 21 to 2B need to be set
-        self._common_function(0, ATM90_CAL_START, 0x5678)
+        self._spi_rw(SPI_WRITE, ATM90_CAL_START, 0x5678)
         # PL Constant MSB
-        self._common_function(0, ATM90_PL_CONST_H, 0x00B9)
+        self._spi_rw(SPI_WRITE, ATM90_PL_CONST_H, 0x00B9)
         # PL Constant LSB
-        self._common_function(0, ATM90_PL_CONST_L, 0xC1F3)
+        self._spi_rw(SPI_WRITE, ATM90_PL_CONST_L, 0xC1F3)
         # Line calibration gain
-        self._common_function(0, ATM90_L_GAIN, 0x1D39)
+        self._spi_rw(SPI_WRITE, ATM90_L_GAIN, 0x1D39)
         # Line calibration angle
-        self._common_function(0, ATM90_L_PHI, 0x0000)
+        self._spi_rw(SPI_WRITE, ATM90_L_PHI, 0x0000)
         # Active Startup Power Threshold
-        self._common_function(0, ATM90_P_START_TH, 0x08BD)
+        self._spi_rw(SPI_WRITE, ATM90_P_START_TH, 0x08BD)
         # Active No-Load Power Threshold
-        self._common_function(0, ATM90_P_NO_L_TH, 0x0000)
+        self._spi_rw(SPI_WRITE, ATM90_P_NO_L_TH, 0x0000)
         # Reactive Startup Power Threshold
-        self._common_function(0, ATM90_Q_START_TH, 0x0AEC)
+        self._spi_rw(SPI_WRITE, ATM90_Q_START_TH, 0x0AEC)
         # Reactive No-Load Power Threshold
-        self._common_function(0, ATM90_Q_NO_L_TH, 0x0000)
+        self._spi_rw(SPI_WRITE, ATM90_Q_NO_L_TH, 0x0000)
         # Metering Mode Configuration. All defaults. See pg 3
-        self._common_function(0, ATM90_MMODE, 0x9422)
+        self._spi_rw(SPI_WRITE, ATM90_MMODE, 0x9422)
         # Write CSOne, as self calculated
-        self._common_function(0, ATM90_CHK_SUM_ONE, 0x4A34)
-        #checksum = self._common_function(1,ATM90_CHK_SUM_ONE,0x0000)
+        self._spi_rw(SPI_WRITE, ATM90_CHK_SUM_ONE, 0x4A34)
+        #checksum = self._spi_rw(SPI_READ,ATM90_CHK_SUM_ONE,0x0000)
         #print('Checksum 1: ',hex(checksum))
         ##############################################
         # Set measurement calibration values
         ##############################################
-        self._common_function(0, ATM90_ADJ_START, 0x5678)
+        self._spi_rw(SPI_WRITE, ATM90_ADJ_START, 0x5678)
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ### !!!!! Modified Ugain.  See my bitknitting post on this:
         # https://bitknitting.wordpress.com/2017/10/07/trying-out-the-atm90e26-featherwing/
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self._common_function(0, ATM90_U_GAIN, 0x890F)
+        self._spi_rw(SPI_WRITE, ATM90_U_GAIN, 0x890F)
         # L line current gain
-        self._common_function(0, ATM90_I_GAIN_L, 0x6E49)
+        self._spi_rw(SPI_WRITE, ATM90_I_GAIN_L, 0x6E49)
         # Voltage offset
-        self._common_function(0, ATM90_U_OFFSET, 0x0000)
+        self._spi_rw(SPI_WRITE, ATM90_U_OFFSET, 0x0000)
         # L line current offset
-        self._common_function(0, ATM90_I_OFFSET_L, 0x0000)
+        self._spi_rw(SPI_WRITE, ATM90_I_OFFSET_L, 0x0000)
         # L line active power offset
-        self._common_function(0, ATM90_P_OFFSET_L, 0x0000)
+        self._spi_rw(SPI_WRITE, ATM90_P_OFFSET_L, 0x0000)
         # L line reactive power offset
-        self._common_function(0, ATM90_Q_OFFSET_L, 0x0000)
+        self._spi_rw(SPI_WRITE, ATM90_Q_OFFSET_L, 0x0000)
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ### !!!!! Modified Checksum two.  See my bitknitting post on this:
         # https://bitknitting.wordpress.com/2017/10/07/trying-out-the-atm90e26-featherwing/
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self._common_function(0, ATM90_CHK_SUM_TWO, 0xE4F4)
-        #checksum = self._common_function(1,ATM90_CHK_SUM_TWO,0x0000)
+        self._spi_rw(SPI_WRITE, ATM90_CHK_SUM_TWO, 0xE4F4)
+        #checksum = self._spi_rw(SPI_READ,ATM90_CHK_SUM_TWO,0x0000)
         #print('Checksum 2: ',hex(checksum))
         # Checks correctness of 21-2B registers and starts normal metering if ok
-        self._common_function(0, ATM90_CAL_START, 0x8765)
+        self._spi_rw(SPI_WRITE, ATM90_CAL_START, 0x8765)
         # Checks correctness of 31-3A registers and starts normal measurement  if ok
-        self._common_function(0, ATM90_ADJ_START, 0x8765)
+        self._spi_rw(SPI_WRITE, ATM90_ADJ_START, 0x8765)
         time.sleep(2) # the chip needs a couple of secs to get it's act together.....
         #####################################################################################
 
 
     @property
     def sys_status(self):
-        reading = self._common_function(1, ATM90_SYS_STATUS, 0xFFFF)
+        reading = self._spi_rw(SPI_READ, ATM90_SYS_STATUS, 0xFFFF)
         return reading
         #####################################################################################
 
 
     @property
     def meter_status(self):
-        reading = self._common_function(1, ATM90_EN_STATUS, 0xFFFF)
+        reading = self._spi_rw(SPI_READ, ATM90_EN_STATUS, 0xFFFF)
         return reading
         #####################################################################################
 
 
     @property
     def line_voltage(self):
-        reading = float(self._common_function(1, ATM90_U_RMS, 0xFFFF))
+        reading = float(self._spi_rw(SPI_READ, ATM90_U_RMS, 0xFFFF))
         reading = reading/100.0
         return reading
         #####################################################################################
@@ -170,7 +172,7 @@ class atm90e26:
 
     @property
     def line_current(self):
-        reading = float(self._common_function(1, ATM90_I_RMS, 0xFFFF))
+        reading = float(self._spi_rw(SPI_READ, ATM90_I_RMS, 0xFFFF))
         reading = reading/1000
         return reading
         #####################################################################################
@@ -178,14 +180,14 @@ class atm90e26:
 
     @property
     def active_power(self):
-        reading = self._common_function(1, ATM90_P_MEAN, 0xFFFF)
+        reading = self._spi_rw(SPI_READ, ATM90_P_MEAN, 0xFFFF)
         return reading
         #####################################################################################
 
 
     @property
     def power_factor(self):
-        reading = self._common_function(1, ATM90_POWER_F, 0xFFFF)
+        reading = self._spi_rw(SPI_READ, ATM90_POWER_F, 0xFFFF)
         # MSB is signed bit...if negative...
         if reading & 0x8000:
             reading = (reading & 0x7FFF) * -1
@@ -195,26 +197,26 @@ class atm90e26:
 
     @property
     def frequency(self):
-        reading = self._common_function(1, ATM90_FREQ, 0xFFFF)
+        reading = self._spi_rw(SPI_READ, ATM90_FREQ, 0xFFFF)
         return reading/100
         #####################################################################################
 
 
     @property
     def import_energy(self):
-        reading = self._common_function(1, ATM90_AP_ENERGY, 0xFFFF)
+        reading = self._spi_rw(SPI_READ, ATM90_AP_ENERGY, 0xFFFF)
         return reading * 0.0001 # returns kWh if PL constant set to 1000imp/kWh
         #####################################################################################
 
 
     @property
     def export_energy(self):
-        reading = self._common_function(1, ATM90_AN_ENERGY, 0xFFFF)
+        reading = self._spi_rw(SPI_READ, ATM90_AN_ENERGY, 0xFFFF)
         return reading * 0.0001 # returns kWh if PL constant set to 1000imp/kWh
         #####################################################################################
 
 
-    def _common_function(self, read, address, value):
+    def _spi_rw(self, read, address, value):
         #####################################################################################
         # If read = 1, There needs to be a 1 in the highest bit of the address
         address |= read << 7
