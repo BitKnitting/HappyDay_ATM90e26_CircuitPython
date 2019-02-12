@@ -14,6 +14,7 @@ energy_sensor = ATM90e26(spi_bus,cs)
 # hmmm.... well, I'm not using the ESP826, but i'll initialize again...
 time.sleep(.8)
 energy_sensor.init()
-print('System status: {}',energy_sensor.sys_status)
-print('Meter status:  {}',energy_sensor.meter_status)
-print('Voltage:       {}',energy_sensor.line_voltage)
+sys_status  = energy_sensor.sys_status
+meter_status = energy_sensor.meter_status
+line_voltage = energy_sensor.line_voltage
+print('system status: 0x{:x} \nmeter status: 0x{:x}\nline voltage: {}'.format(sys_status,meter_status,line_voltage))
