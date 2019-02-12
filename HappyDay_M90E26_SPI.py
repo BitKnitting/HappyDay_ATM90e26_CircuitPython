@@ -1,6 +1,6 @@
 # The MIT License (MIT)
 #
-# Copyright (c) 2017, 2018 HappyDay
+# Copyright (c) 2017, 2018, 2019 HappyDay
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,8 @@ This is a CircuitPython driver for the ATM90e26 energy reading chip.
     - changed naming from energyic_SPI to atm90e26 to better reflect what this is.
     - more readable
 * Version 1.2:
-    - changed using separate spi_device library to using adafruit_bus_device.spi_device.    
+    - changed using separate spi_device library to using adafruit_bus_device.spi_device. 
+    - added initializing the atm90e26.   
 """
 import time  # need a bit of delay at the end of initializing the ATM90e26...
 from adafruit_bus_device.spi_device import SPIDevice
@@ -79,11 +80,13 @@ class ATM90e26:
     ##############################################################################
 
     def __init__(self, spi_bus, cs):
+        # TBD: Does SPIDevice return an error if not working?d
         self._device = SPIDevice(
             spi_bus, cs, baudrate=200000, polarity=1, phase=1)
-        self.resetIC()
+        self.init()
 
-    def resetIC(self):
+    # TODO: How to tell when initialization failed?
+    def init(self):
         # Perform soft reset
         self._spi_rw(SPI_WRITE, ATM90_SOFT_RESET, 0x789A)
         # Voltage sag irq=1, report on warnout pin=1, energy dir change irq=0
@@ -125,7 +128,9 @@ class ATM90e26:
         # !!!!! Modified Ugain.  See my bitknitting post on this:
         # https://bitknitting.wordpress.com/2017/10/07/trying-out-the-atm90e26-featherwing/
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self._spi_rw(SPI_WRITE, ATM90_U_GAIN, 0x890F)
+        #self._spi_rw(SPI_WRITE, ATM90_U_GAIN, 0x890F)
+        # While I am trying to get the DIN rail to work, put back to what Tisham originally had...
+        self._spi_rw(SPI_WRITE,ATM90_U_GAIN, 0xD464)
         # L line current gain
         self._spi_rw(SPI_WRITE, ATM90_I_GAIN_L, 0x6E49)
         # Voltage offset
@@ -140,7 +145,9 @@ class ATM90e26:
         # !!!!! Modified Checksum two.  See my bitknitting post on this:
         # https://bitknitting.wordpress.com/2017/10/07/trying-out-the-atm90e26-featherwing/
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self._spi_rw(SPI_WRITE, ATM90_CHK_SUM_TWO, 0xE4F4)
+        # as above, I noted I changed the Voltage rms gain so checksum two is back to what Tisham originally had.
+        #self._spi_rw(SPI_WRITE, ATM90_CHK_SUM_TWO, 0xE4F4)
+        self._spi_rw(SPI_WRITE, ATM90_CHK_SUM_TWO, 0xD294)
         #checksum = self._spi_rw(SPI_READ,ATM90_CHK_SUM_TWO,0x0000)
         #print('Checksum 2: ',hex(checksum))
         # Checks correctness of 21-2B registers and starts normal metering if ok
@@ -149,6 +156,11 @@ class ATM90e26:
         self._spi_rw(SPI_WRITE, ATM90_ADJ_START, 0x8765)
         # the chip needs a couple of secs to get it's act together.....
         time.sleep(2)
+        sys_status = self.sys_status
+        if (sys_status & 0xC000):
+            print('-->Checksum error 1!')
+        if (sys_status & 0x3000):
+            print('--->Checksum error 2');    
         #####################################################################################
 
     @property

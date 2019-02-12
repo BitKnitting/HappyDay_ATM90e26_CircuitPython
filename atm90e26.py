@@ -1,40 +1,4 @@
-# The MIT License (MIT)
-#
-# Copyright (c) 2017, 2018 HappyDay
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-"""
-====================================================
 
-This is a CircuitPython driver for the ATM90e26 energy reading chip.
-
-* Author(s): HappyDay ported the energyic_SPI.cpp Arduino library by whatnick and
-             Ryzee (c 2016).  The energyic_SPI.cpp library is located at this GitHub location:
-             https://github.com/whatnick/ATM90E26_Arduino/blob/master/energyic_SPI.cpp
-* Version 1.1:
-    - changed the get<something>() functions to property getters.
-    - updated code based on Pylint 2.0 feedback.
-    - changed naming from energyic_SPI to atm90e26 to better reflect what this is.
-    - more readable
-* Version 1.2:
-    - changed using separate spi_device library to using adafruit_bus_device.spi_device.    
-"""
 import time  # need a bit of delay at the end of initializing the ATM90e26...
 from adafruit_bus_device.spi_device import SPIDevice
 #### REGISTERS #####
